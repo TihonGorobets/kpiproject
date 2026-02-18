@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Projects Hub | Architecture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #111111; --bg: #f4f6f8; --white: #ffffff;
+            --text-main: #111111; --text-secondary: #636e72;
+            --border: #e9ecef; --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --danger: #e74c3c; --success: #27ae60; --blue: #007bff; --orange: #f39c12;
+            --hover-bg: #f1f3f5;
+            --lec-bg: #d1fae5; --lec-text: #047857; --lec-border: #34d399;
+            --prac-bg: #fee2e2; --prac-text: #b91c1c; --prac-border: #fca5a5;
+            --lab-bg: #fef3c7; --lab-text: #b45309; --lab-border: #fcd34d;
+        }
+
+        [data-theme="dark"] {
+            --primary: #ffffff; --bg: #121212; --white: #1e1e1e;
+            --text-main: #e4e6eb; --text-secondary: #b0b3b8;
+            --border: #333; --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            --hover-bg: #2c2c2c;
+            --lec-bg: #064e3b; --lec-text: #6ee7b7; --lec-border: #059669;
+            --prac-bg: #7f1d1d; --prac-text: #fca5a5; --prac-border: #b91c1c;
+            --lab-bg: #78350f; --lab-text: #fcd34d; --lab-border: #d97706;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; display: flex; flex-direction: column; min-height: 100vh; transition: background 0.3s; touch-action: pan-y; }
+
+        /* ALERT ICON */
+        .alert-floating { position: fixed; bottom: 80px; right: 20px; z-index: 5000; width: 50px; height: 50px; border-radius: 50%; background: var(--danger); color: white; display: none; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 15px rgba(231, 76, 60, 0.6); animation: pulse 1.5s infinite; }
+        .alert-floating.active { display: flex; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* BIRTHDAY BUBBLE */
+        .bday-bubble {
+            position: fixed; top: 120px; left: 15px; z-index: 4000;
+            background: var(--white); width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 2px solid #ffd700; cursor: pointer;
+            transition: transform 0.2s; animation: wiggle 3s infinite;
+        }
+        .bday-bubble.hidden { display: none; }
+        .bday-bubble:hover { transform: scale(1.1); animation: none; }
+        .bday-icon { font-size: 24px; }
+        .bday-count { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .bday-dropdown { position: absolute; top: 0; left: 60px; background: var(--white); border-radius: 12px; padding: 15px; width: 220px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid var(--border); opacity: 0; visibility: hidden; transform: translateX(-10px); transition: 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); pointer-events: none; }
+        .bday-bubble:hover .bday-dropdown, .bday-bubble:active .bday-dropdown { opacity: 1; visibility: visible; transform: translateX(0); pointer-events: auto; }
+        .bday-item { margin-bottom: 8px; font-size: 13px; border-bottom: 1px dashed var(--border); padding-bottom: 5px; display:flex; align-items:center; gap:8px;}
+        .bday-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .bday-today { color: var(--danger); font-weight:bold; }
+        @keyframes wiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: var(--primary); color: var(--bg); padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: 600; animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards; }
+        
+        header { background: var(--white); padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; height: 60px; box-sizing: border-box; width: 100%; flex-shrink: 0; }
+        .logo-box { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .logo-square { width: 24px; height: 24px; background: linear-gradient(135deg, var(--blue), var(--success)); border-radius: 6px; }
+        .header-controls { display: flex; gap: 12px; align-items: center; }
+        .theme-btn { background: var(--hover-bg); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .account-trigger { background: var(--hover-bg); border: 1px solid var(--border); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s; color: var(--text-main); }
+        .live-timer { text-align: center; padding: 8px; background: var(--blue); color: white; font-size: 12px; font-weight: 600; display: none; width: 100%; flex-shrink: 0; }
+        .live-timer.active { display: block; }
+        .tabs-nav { display: flex; justify-content: flex-start; gap: 8px; padding: 10px 15px; background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 60px; z-index: 900; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; -webkit-overflow-scrolling: touch; }
+        @media (min-width: 768px) { .tabs-nav { justify-content: center; } }
+        .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid transparent; background: transparent; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+        .tab-btn.active { background: var(--hover-bg); color: var(--text-main); border-color: var(--border); }
+
+        /* Board Styles */
+        .info-board-container { position: relative; height: 850px; border: 2px dashed var(--border); border-radius: 16px; overflow: hidden; background-color: var(--white); margin-bottom: 20px; resize: vertical; }
+        .board-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 20px 20px; transform-origin: 0 0; cursor: grab; }
+        .board-canvas.panning { cursor: grabbing; }
+        .board-controls { position: absolute; bottom: 15px; left: 15px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; display: flex; gap: 5px; padding: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
+        .zoom-btn { background: var(--hover-bg); border: none; width: 30px; height: 30px; border-radius: 4px; font-weight: bold; cursor: pointer; color: var(--text-main); }
+        .zoom-btn:hover { background: #ddd; }
+        .board-toolbar { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        .sticky-note { position: absolute; width: 150px; min-height: 120px; padding: 15px; box-shadow: 2px 4px 10px rgba(0,0,0,0.15); font-family: 'Kalam', cursive; font-size: 14px; color: #222; display: flex; flex-direction: column; justify-content: center; text-align: center; border-radius: 2px; cursor: grab; user-select: none; transition: box-shadow 0.2s; }
+        .sticky-note:active { cursor: grabbing; box-shadow: 5px 8px 20px rgba(0,0,0,0.25); z-index: 1000 !important; }
+        .sticky-note img { width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 5px; pointer-events: none; background: #eee; min-height: 50px; }
+        .pin-head { width: 14px; height: 14px; border-radius: 50%; background: #e74c3c; box-shadow: 1px 1px 3px rgba(0,0,0,0.4), inset 2px 2px 2px rgba(255,255,255,0.4); border: 1px solid #c0392b; }
+        .sticky-pin { position: absolute; top: -7px; left: 50%; transform: translateX(-50%); z-index: 2; }
+        .sticky-pin .pin-head { width: 12px; height: 12px; }
+        .board-pin { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: grab; z-index: 5; }
+        .board-pin:active { cursor: grabbing; transform: scale(1.1); z-index: 1000 !important; }
+        .board-pin .pin-head { width: 16px; height: 16px; }
+        .sticky-note.yellow { background: #fef9c3; } .sticky-note.pink { background: #fce7f3; } .sticky-note.blue { background: #dbeafe; } .sticky-note.green { background: #dcfce7; }
+        .note-delete { position: absolute; bottom: 2px; right: 2px; font-size: 16px; color: #555; background: none; border: none; cursor: pointer; opacity: 0.5; z-index: 5; }
+        .note-delete:hover { opacity: 1; color: red; }
+        .pin-delete { position: absolute; top: -15px; right: -15px; background: var(--white); border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); color: var(--danger); display: none; }
+        .board-pin:hover .pin-delete { display: flex; }
+        .note-author { position: absolute; bottom: 5px; left: 5px; font-size: 9px; opacity: 0.6; font-family: 'Inter', sans-serif; pointer-events: none; }
+
+        /* Homework */
+        .hw-day-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .hw-day-header { font-weight: 700; color: var(--blue); margin-bottom: 10px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; display:flex; justify-content: space-between;}
+        .hw-subject-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .hw-subject-row:last-child { border-bottom: none; }
+        .hw-sub-name { font-weight: 600; font-size: 13px; margin-bottom: 5px; display: block; }
+        .hw-text { font-size: 13px; color: var(--text-main); white-space: pre-wrap; }
+        .hw-input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 40px; background: var(--bg); }
+        .hw-empty { color: var(--text-secondary); font-style: italic; font-size: 12px; }
+
+        /* General & Table */
+        .table-container { background: var(--white); border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; box-sizing: border-box; }
+        @media (min-width: 768px) { .table-container { max-width: 96%; margin: 0 auto; } }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { background: var(--hover-bg); padding: 12px 15px; text-align: left; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; white-space: nowrap; }
+        td { padding: 14px 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .th-content { display: flex; align-items: center; gap: 8px; }
+        .deadlines-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        .deadline-card { min-width: 200px; background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 15px; position: relative; flex-shrink: 0; }
+        .deadline-card.urgent { border-left: 4px solid var(--danger); }
+        .deadline-title { font-weight: 700; font-size: 14px; display: block; margin-bottom: 4px; }
+        .deadline-time { font-size: 12px; font-weight: 600; color: var(--blue); }
+        .btn-del-dl { position: absolute; top: 10px; right: 10px; font-size: 16px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 5px; }
+        .folder-item { background: var(--white); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+        .folder-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--white); transition: 0.2s; }
+        .folder-header:active { background: var(--hover-bg); }
+        .folder-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .folder-content { display: none; padding: 15px; border-top: 1px solid var(--border); background: var(--hover-bg); }
+        .folder-item.open .folder-content { display: block; }
+        .material-link { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--white); border-radius: 10px; margin-bottom: 8px; text-decoration: none; color: var(--text-main); border: 1px solid var(--border); font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .material-link:active { transform: scale(0.98); }
+        .admin-folder-controls { display: flex; gap: 10px; margin-top: 10px; }
+        .section-title, .booking-card h3, .drawer h2, .modal-content h3 { text-align: center; margin-top: 0; }
+        main { flex: 1; padding: 15px; width: 100%; box-sizing: border-box; padding-bottom: 80px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .booking-card { background: var(--white); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .avatar-small, .voter-ava { width: 28px; height: 28px; border-radius: 50%; background: var(--hover-bg); display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid var(--border); flex-shrink: 0; color: var(--text-main); }
+        .week-toggle-container { display: flex; justify-content: center; margin: 20px 0 10px; }
+        .week-toggle { background: var(--hover-bg); border-radius: 25px; padding: 4px; display: flex; position: relative; border: 1px solid var(--border); }
+        .week-btn { padding: 8px 24px; border-radius: 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: 0.3s; z-index: 2; position: relative; }
+        .week-btn.active { background: var(--white); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .schedule-grid { display: grid; grid-template-columns: repeat(5, 260px); gap: 12px; margin-top: 15px; overflow-x: auto; padding-bottom: 20px; padding-left: 15px; padding-right: 15px; -webkit-overflow-scrolling: touch; }
+        .day-column { display: flex; flex-direction: column; gap: 8px; }
+        .day-header { text-align: center; font-weight: 700; font-size: 12px; margin-bottom: 5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; position: sticky; left: 0; }
+        .pair-slot { display: flex; flex-direction: column; gap: 4px; height: 120px; }
+        .time-slot { font-size: 10px; font-weight: 700; color: var(--text-secondary); padding-left: 5px; opacity: 0.6; }
+        .subject-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 12px; height: 100%; cursor: pointer; transition: 0.2s; position: relative; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; }
+        .subject-card.current { border: 2px solid var(--success); box-shadow: 0 0 10px rgba(39, 174, 96, 0.15); }
+        .subject-card.current::after { content: "ЗАРАЗ"; position: absolute; top: 8px; right: 8px; font-size: 8px; font-weight: 900; color: var(--success); background: #ecfdf5; padding: 2px 4px; border-radius: 4px; }
+        .subject-card.empty { background: transparent; border: 1px dashed var(--border); opacity: 0.5; cursor: default; }
+        .subject-type { font-size: 9px; text-transform: uppercase; font-weight: 800; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; align-self: flex-start; }
+        .type-lecture { background: var(--lec-bg); color: var(--lec-text); border: 1px solid var(--lec-border); }
+        .type-practice { background: var(--prac-bg); color: var(--prac-text); border: 1px solid var(--prac-border); }
+        .type-lab { background: var(--lab-bg); color: var(--lab-text); border: 1px solid var(--lab-border); }
+        .subject-name { font-size: 12px; font-weight: 600; line-height: 1.35; display: block; }
+        .teacher-name { font-size: 10px; color: var(--text-secondary); margin-top: 4px; display: block; }
+
+        /* Attendance & Polls */
+        .attendance-container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .poll-card { background: var(--white); border-radius: 16px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .poll-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .poll-header span:first-child { font-weight: 700; font-size: 14px; }
+        .poll-option { position: relative; min-height: 44px; background: var(--hover-bg); border-radius: 10px; margin-bottom: 10px; overflow: hidden; border: 1px solid transparent; transition: 0.2s; display:flex; flex-direction: column;}
+        .poll-option:hover { border-color: var(--blue); }
+        .poll-option.voted { border-color: var(--success); background: #f0fdf4; }
+        .poll-row-main { position: relative; height: 44px; width: 100%; cursor: pointer; }
+        .poll-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--text-secondary); opacity: 0.1; width: 0%; transition: width 0.5s ease; z-index: 1; }
+        .poll-option.voted .poll-bar-fill { background: var(--success); opacity: 0.2; }
+        .poll-text { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2; font-size: 13px; font-weight: 500; pointer-events: none; }
+        .poll-reveal-btn { pointer-events: auto; background: none; border: none; font-size: 12px; cursor: pointer; padding: 5px; color: var(--text-secondary); transition: 0.2s; font-weight: bold; }
+        .poll-reveal-btn:hover { color: var(--blue); transform: scale(1.1); }
+        .poll-voters-collapse { display: none; padding: 10px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.02); flex-wrap: wrap; gap: 5px; }
+        .poll-voters-collapse.open { display: flex; }
+        .custom-poll-creator { background: rgba(0,123,255,0.05); padding: 15px; border-radius: 12px; border: 1px dashed var(--blue); margin-bottom: 20px; display: none; }
+        .custom-poll-creator.active { display: block; }
+        
+        .attendance-day-header { font-weight: 800; color: var(--blue); font-size: 16px; margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .attendance-day-header.today { color: var(--success); border-color: var(--success); }
+        .attendance-day-header.today::after { content: 'СЬОГОДНІ'; font-size: 10px; background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; }
+
+        /* Player & Modals */
+        #playerModal .modal-content { max-width: 90%; width: 600px; padding: 0; background: black; overflow: hidden; border-radius: 16px; }
+        .player-container { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; }
+        .player-container iframe, .player-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .close-player { position: absolute; top: -40px; right: 0; color: white; font-size: 30px; background: none; border: none; cursor: pointer; z-index: 7000; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 6000; backdrop-filter: blur(4px); padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--white); width: 100%; max-width: 400px; border-radius: 24px; padding: 25px; text-align: center; color: var(--text-main); box-shadow: 0 20px 50px rgba(0,0,0,0.3); position: relative; max-height: 85vh; overflow-y: auto; }
+        .meet-link { display: block; margin-top: 20px; padding: 16px; background: var(--blue); color: white; text-decoration: none; border-radius: 14px; font-weight: 600; transition: 0.2s; }
+        
+        .drawer { position: fixed; right: -100%; top: 0; width: 85%; max-width: 320px; height: 100%; background: var(--white); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5000; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; box-shadow: -5px 0 30px rgba(0,0,0,0.2); }
+        .drawer.active { right: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 4500; backdrop-filter: blur(3px); }
+        .overlay.active { display: block; }
+        .admin-box { background: rgba(0, 123, 255, 0.1); padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px dashed var(--blue); }
+        .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-main); }
+        .btn-del-sub { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; font-size: 14px; padding: 0 5px; }
+        input, select { padding: 14px; border-radius: 12px; border: 1px solid var(--border); font-size: 16px; outline: none; background: var(--white); color: var(--text-main); width: 100%; box-sizing: border-box; }
+        .btn-main { background: var(--primary); color: var(--bg); border: none; font-weight: 600; cursor: pointer; padding: 14px; border-radius: 12px; width: 100%; transition: 0.2s; font-size: 15px; }
+        .hidden { display: none; }
+        .filter-select { width: auto; padding: 4px 8px; margin: 0; font-size: 12px; height: auto; max-width: 150px; }
+        .resources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .resource-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; text-decoration: none; color: var(--text-main); transition: 0.2s; }
+        .res-icon { font-size: 32px; margin-bottom: 5px; }
+        .del-account-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); margin-top: 15px; font-size: 12px; padding: 10px; }
+        
+        .status-dot { font-size: 10px; margin-right: 5px; }
+        .status-dot.online { color: var(--success); text-shadow: 0 0 5px var(--success); }
+        .status-dot.offline { color: #ccc; }
+        
+        .stat-badge { background: var(--white); padding: 5px 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--blue); }
+    </style>
+</head>
+<body>
+
+<div id="alertIcon" class="alert-floating" title="Увага! Тривога">📢</div>
+
+<div id="birthday-bubble" class="bday-bubble hidden">
+    <div class="bday-icon">🎁</div>
+    <div class="bday-count" id="bday-count-badge">0</div>
+    <div class="bday-dropdown" id="bday-dropdown-content"></div>
+</div>
+
+<div id="toast-container"></div>
+<div class="overlay" id="overlay"></div>
+
+<div class="modal" id="playerModal" onclick="closePlayer()">
+    <button class="close-player" onclick="closePlayer()">&times;</button>
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="playerContent" class="player-container"></div>
+    </div>
+</div>
+
+<div class="modal" id="dobModal">
+    <div class="modal-content">
+        <button onclick="closeDobModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:28px; cursor:pointer; color:var(--text-secondary); line-height:1; padding:10px;">&times;</button>
+        <h3 style="margin-top:10px;">🎉 Давайте знайомитись!</h3>
+        <p style="color:var(--text-secondary); font-size:14px; margin-bottom:20px;">Вкажіть дату народження один раз.</p>
+        <input type="date" id="dobInput" style="margin-bottom:20px;">
+        <button class="btn-main" onclick="saveDob()">Зберегти</button>
+    </div>
+</div>
+
+<header>
+    <div class="logo-box"><div class="logo-square"></div><span>Projects Hub</span></div>
+    <div class="header-controls">
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+        <div class="account-trigger" id="openDrawer" onclick="toggleDrawer()">👤</div>
+    </div>
+</header>
+
+<div class="live-timer" id="liveTimer"></div>
+
+<nav class="tabs-nav">
+    <button class="tab-btn active" id="btn-home" onclick="switchTab('home')">🏠 Головна</button>
+    <button class="tab-btn" id="btn-homework" onclick="switchTab('homework')">🏠 ДЗ</button>
+    <button class="tab-btn" id="btn-topics" onclick="switchTab('topics')">🚀 Проекти</button>
+    <button class="tab-btn" id="btn-schedule" onclick="switchTab('schedule')">📅 Розклад</button>
+    <button class="tab-btn" id="btn-materials" onclick="switchTab('materials')">📚 Матеріали</button>
+    <button class="tab-btn" id="btn-attendance" onclick="switchTab('attendance')">📊 Явка</button>
+    <button class="tab-btn" id="btn-queue" onclick="switchTab('queue')">🚶‍♂️ Черга</button>
+    <button class="tab-btn" id="btn-resources" onclick="switchTab('resources')">🔗 Ресурси</button>
+</nav>
+
+<div class="drawer" id="drawer">
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 style="margin:0; font-size: 20px;">Кабінет</h2>
+        <button onclick="toggleDrawer()" style="background:none; border:none; font-size: 32px; cursor:pointer; color:var(--text-main); padding: 5px;">&times;</button>
+    </div>
+
+    <div id="auth-view">
+        <h3 id="authTitle" style="margin-top:0;">Вхід</h3>
+        <input type="text" id="login" placeholder="Логін" style="margin-bottom: 12px;">
+        <input type="password" id="pass" placeholder="Пароль" style="margin-bottom: 20px;">
+        <button class="btn-main" id="btnAction">Увійти</button>
+        <div style="text-align:center; margin-top:20px; font-size:14px;">
+            <span id="authToggleText">Ще не з нами?</span> 
+            <a href="#" onclick="toggleAuthMode()" style="color:var(--blue); font-weight:600; text-decoration:none; padding:10px; display:inline-block;">Зареєструватися</a>
+        </div>
+    </div>
+
+    <div id="user-view" class="hidden">
+        <div class="profile-card" style="text-align:center;">
+            <div class="avatar-small" style="width:80px; height:80px; font-size:36px; margin:0 auto 15px;">👤</div>
+            <h3 id="profName" style="margin:0; font-size:18px;"></h3>
+            <span id="roleLabel" style="font-size:11px; padding:4px 10px; background:var(--blue); color:white; border-radius:12px; display:none; margin-top:8px;"></span>
+            
+            <button class="btn-main del-account-btn" onclick="deleteMyAccount()">Видалити мій акаунт</button>
+        </div>
+
+        <div class="bday-section">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:8px;">ІМЕНИННИКИ:</span>
+            <div id="bday-list"></div>
+        </div>
+        
+        <div id="starosta-tools" class="hidden" style="margin-top:25px;">
+            <div class="admin-box" style="padding:15px; border:1px solid var(--danger); border-radius:12px; margin-bottom:15px;">
+                <button class="btn-main" id="btnAlertToggle" style="background:var(--danger); color:white;" onclick="toggleAlertState()">🔴 Ввімкнути Тривогу</button>
+            </div>
+            <div class="admin-box" style="padding:15px; border:1px solid var(--blue); border-radius:12px;">
+                <span style="font-size:12px; font-weight:700; color:var(--blue);">ДОДАТИ ПРЕДМЕТ:</span>
+                <input type="text" id="newSubName" placeholder="Назва" style="margin:10px 0;">
+                <button class="btn-main" id="btnAddSub" style="background:var(--blue); color:white;">Додати</button>
+                <div style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+                    <div id="admin-subjects-list" style="max-height: 120px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-tools" class="hidden">
+            <div class="admin-box" style="margin-top:15px; border-color:var(--text-secondary);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:12px; font-weight:700;">СТАТИСТИКА:</span>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div class="stat-badge">🟢 Онлайн: <span id="online-count">0</span></div>
+                    <div class="stat-badge">📊 Візити (тиж): <span id="visit-count">0</span></div>
+                </div>
+
+                <span style="font-size:12px; font-weight:700;">КОРИСТУВАЧІ:</span>
+                <div id="admin-users-list" style="max-height: 250px; overflow-y: auto; margin-top: 5px;"></div>
+            </div>
+        </div>
+
+        <button class="btn-main" id="btnLogout" style="background:var(--hover-bg); color:var(--text-main); margin-top:30px;">Вийти</button>
+    </div>
+</div>
+
+<main id="view-home">
+    <h3 class="section-title">📌 Інформація</h3>
+    <div id="deadlines-section" class="hidden">
+        <div class="deadlines-container" id="deadlinesList"></div>
+        <div id="add-deadline-form" class="booking-card hidden" style="padding:20px; margin-bottom:25px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text-secondary);">НОВИЙ ДЕДЛАЙН:</span>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-direction:column;">
+                <input type="text" id="dlTask" placeholder="Завдання">
+                <input type="date" id="dlDate">
+            </div>
+            <button class="btn-main" onclick="addDeadline()" style="margin-top:15px;">Створити</button>
+        </div>
+    </div>
+
+    <h3 class="section-title" style="margin-top:30px;">📝 Інформаційна дошка</h3>
+    
+    <div class="info-board-container" id="board-container">
+        <div class="board-canvas" id="stickies-wrapper"></div>
+        
+        <div class="board-controls">
+            <button class="zoom-btn" onclick="zoomBoard(0.9)">-</button>
+            <button class="zoom-btn" onclick="resetBoard()">R</button>
+            <button class="zoom-btn" onclick="zoomBoard(1.1)">+</button>
+        </div>
+    </div>
+
+    <div class="board-toolbar">
+        <button class="btn-main" onclick="addBoardItem('note')" style="width:auto; padding: 8px 12px; font-size:13px;">📝 Нотатка</button>
+        <button class="btn-main" onclick="addBoardItem('photo')" style="width:auto; padding: 8px 12px; font-size:13px;">📷 Фото</button>
+        <button class="btn-main" onclick="addBoardItem('pin')" style="width:auto; padding: 8px 12px; font-size:13px;">📍 Пін</button>
+    </div>
+</main>
+
+<main id="view-homework" class="hidden">
+    <div class="attendance-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,123,255,0.1); padding:12px; border-radius:12px;">
+            <span style="font-size:13px; color:var(--blue); font-weight:700;">📖 Домашнє Завдання</span>
+            <button onclick="openHomeworkArchive()" style="border:none; background:none; font-size:22px; cursor:pointer; padding:5px;">📂</button>
+        </div>
+        <div style="text-align:center; font-size:13px; color:var(--text-secondary); margin:10px 0;" id="hwWeekDisplay"></div>
+        <div id="homework-list"></div>
+    </div>
+</main>
+
+<main id="view-topics" class="hidden">
+    <div class="booking-card">
+        <form id="topicForm" style="display:flex; flex-direction:column; gap:12px;">
+            <select id="subjectSelect" required></select>
+            <input type="text" id="topic" placeholder="Ваша тема проекту" required>
+            <button type="submit" class="btn-main">Забронювати</button>
+        </form>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead><tr><th>Студент</th><th><div class="th-content">Предмет <select id="tableFilter" class="filter-select"><option value="all">Всі</option></select></div></th><th>Тема</th><th></th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</main>
+
+<main id="view-schedule" class="hidden">
+    <div class="week-toggle-container">
+        <div class="week-toggle">
+            <button class="week-btn active" id="btn-w1" onclick="setWeek(1)">1-й Тиждень</button>
+            <button class="week-btn" id="btn-w2" onclick="setWeek(2)">2-й Тиждень</button>
+        </div>
+    </div>
+    <div class="schedule-grid" id="scheduleGrid"></div>
+</main>
+
+<main id="view-materials" class="hidden">
+    <div class="booking-card">
+        <h3 style="margin-top:0;">📂 Навчальні матеріали</h3>
+        <p style="color:var(--text-secondary); font-size:12px; margin-bottom:15px; text-align:center;">Оберіть предмет для перегляду:</p>
+        <select id="materialSubjectSelect" onchange="loadMaterials()" style="width:100%; margin-bottom:15px;"></select>
+        
+        <div id="material-admin-panel" class="hidden" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="newMaterialFolder" placeholder="Нова папка (напр. Лекція 1)">
+                <button class="btn-main" onclick="addMaterialFolder()" style="width:auto; white-space:nowrap; padding:12px 15px;">➕ Папка</button>
+            </div>
+        </div>
+    </div>
+    <div id="materials-container" style="margin-top:20px;"></div>
+</main>
+
+<main id="view-attendance" class="hidden">
+    <div class="attendance-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,193,7,0.1); padding:12px; border-radius:12px;">
+            <span style="font-size:13px; color:#856404; font-weight:500;">⚠️ Оновлюється щонеділі</span>
+            <button onclick="openArchive()" style="border:none; background:none; font-size:22px; cursor:pointer; padding:5px;">📂</button>
+        </div>
+        
+        <div id="poll-creator-box" class="custom-poll-creator">
+            <span style="font-size:12px; font-weight:700; color:var(--blue);">СТВОРИТИ ОПИТУВАННЯ:</span>
+            <input type="text" id="newPollQuestion" placeholder="Питання (напр. Хто йде на екскурсію?)" style="margin:10px 0;">
+            <input type="text" id="newPollOptions" placeholder="Варіанти розділяйте комою (напр. Я, Не я, Можливо)" style="margin-bottom:5px;">
+            <small style="color:var(--text-secondary); font-size:11px; display:block; margin-bottom:10px;">* Введіть варіанти через кому</small>
+            <button class="btn-main" onclick="createCustomPoll()" style="background:var(--blue); color:white;">Створити</button>
+        </div>
+        <button id="btnShowPollCreator" class="btn-main hidden" onclick="togglePollCreator()" style="background:rgba(0,123,255,0.1); color:var(--blue); border:1px dashed var(--blue); margin-bottom:15px;">➕ Створити опитування</button>
+
+        <div style="text-align:center; font-size:13px; color:var(--text-secondary); margin-bottom:15px;" id="currentWeekDisplay"></div>
+        <div id="polls-wrapper" style="display:flex; flex-direction:column; gap:15px;"></div>
+    </div>
+</main>
+
+<main id="view-queue" class="hidden">
+    <div class="booking-card">
+        <h3 style="margin-top:0;">Електронна Черга</h3>
+        <select id="queueSubjectSelect" style="margin-bottom:15px;" onchange="loadQueue()"></select>
+        <button class="btn-main" onclick="joinQueue()">✋ Встати в чергу</button>
+        <div style="margin-top: 25px; display:flex; flex-direction:column; gap:10px;" id="queue-list-container"></div>
+    </div>
+</main>
+
+<main id="view-resources" class="hidden">
+    <div class="resources-grid">
+        <a href="https://campus.kpi.ua/" target="_blank" class="resource-card"><div class="res-icon">🎓</div><div class="res-info"><h3>Кампус</h3><p>Особистий кабінет</p></div></a>
+        <a href="https://moodle.kpi.ua/" target="_blank" class="resource-card"><div class="res-icon">📚</div><div class="res-info"><h3>Moodle</h3><p>Дистанційне навчання</p></div></a>
+        <a href="https://schedule.kpi.ua/" target="_blank" class="resource-card"><div class="res-icon">🗓️</div><div class="res-info"><h3>Розклад</h3><p>Офіційний сайт</p></div></a>
+        <a href="https://t.me/dnvr_kpi" target="_blank" class="resource-card"><div class="res-icon">📢</div><div class="res-info"><h3>ДНВР</h3><p>Новини деканату</p></div></a>
+        <a href="https://ukr.net/" target="_blank" class="resource-card"><div class="res-icon">📧</div><div class="res-info"><h3>Ukr.net</h3><p>Пошта</p></div></a>
+    </div>
+</main>
+
+<div class="modal" id="subjectModal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="modalType" class="subject-type"></div>
+        <h2 id="modalName" style="margin:15px 0;"></h2>
+        <p id="modalTeacher" style="font-size:14px; color:var(--text-secondary);"></p>
+        <div id="modalLinkContainer"></div>
+        <button onclick="closeModal()" style="margin-top:25px; background:none; border:none; color:var(--text-secondary); padding:10px;">Закрити</button>
+    </div>
+</div>
+
+<div class="modal" id="archiveModal" onclick="closeArchive()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="text-align:left;">
+        <h2 style="text-align:center; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:15px;">Архів</h2>
+        <div id="archive-content" style="font-size:13px; min-height: 100px;">Завантаження...</div>
+        <button onclick="closeArchive()" style="width:100%; margin-top:25px; padding:14px; border:none; background:var(--bg); border-radius:12px; color:var(--text-main);">Закрити</button>
+    </div>
+</div>
+
+<div class="modal" id="hwArchiveModal" onclick="closeHwArchive()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="text-align:left;">
+        <h2 style="text-align:center; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:15px;">Архів ДЗ</h2>
+        <div id="hw-archive-content" style="font-size:13px; min-height: 100px;">Завантаження...</div>
+        <button onclick="closeHwArchive()" style="width:100%; margin-top:25px; padding:14px; border:none; background:var(--bg); border-radius:12px; color:var(--text-main);">Закрити</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove, get, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDCZTdIiLQMs2LSrWQbXZvXhCXDaK_naok",
+        authDomain: "projects-hub-47565.firebaseapp.com",
+        databaseURL: "https://projects-hub-47565-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "projects-hub-47565",
+        storageBucket: "projects-hub-47565.firebasestorage.app",
+        messagingSenderId: "97622604144",
+        appId: "1:97622604144:web:2d5e0d19a01fc623e4f7b5",
+        measurementId: "G-5HY73S1KP7"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    let sessionUser = JSON.parse(localStorage.getItem('user_session')) || null;
+    let allTopics = [];
+    let currentFilter = 'all';
+    let currentWeek = 1;
+    let alertState = false;
+    let usersMap = {}; 
+    let onlineUsers = {};
+    let isLoginMode = true;
+
+    // --- SYSTEM ---
+    window.toggleTheme = () => {
+        const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', newTheme);
+        document.getElementById('themeBtn').innerText = newTheme === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('theme', newTheme);
+    };
+    if(localStorage.getItem('theme') === 'dark') { document.body.setAttribute('data-theme', 'dark'); document.getElementById('themeBtn').innerText = '☀️'; }
+    
+    window.toggleDrawer = () => {
+        document.getElementById('drawer').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    };
+    document.getElementById('overlay').onclick = window.toggleDrawer;
+
+    const showToast = (m) => {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div'); t.className='toast'; t.innerText=m;
+        c.appendChild(t); setTimeout(()=>t.remove(), 3000);
+    };
+
+    // --- DATA ---
+    const links = { "Алгебра і геометрія": "https://meet.google.com/shf-fkib-zcd", "Програмування": "https://us02web.zoom.us/j/89711810460?pwd=M1hWZVJ5VnltRHRsLytqVFhtdjNxQT09", "Фізика": "https://us02web.zoom.us/j/5844383808?pwd=KzVyQUZNVUQxVURET0NmWmtEU1lDZz09", "Математична логіка": "https://us02web.zoom.us/j/8085368517?pwd=d0ZFV2RwQytVUnJhaU51Y0F0SEYzQT09", "Математичний аналіз": "https://www.ukr.net/", "Теорія графів": "https://us02web.zoom.us/j/8085368517?pwd=d0ZFV2RwQytVUnJhaU51Y0F0SEYzQT09", "Історія науки і техніки": "https://us02web.zoom.us/my/i.perga?pwd=osE6WapG7WpClE3Ita98v8RRjESlCA.1", "Основи здоровя": "https://us05web.zoom.us/j/85601819609?pwd=YXpEQ3BRUko2WHlsR1ZvRUlWcXloQT09", "Англійська мова": "https://meet.google.com/tns-wsvq-znn" };
+    const PAIR_TIMES = ["08:30", "10:25", "12:20", "14:15"];
+    
+    const scheduleWeek1 = [
+        { day: "Понеділок", slots: [{t:"08:30",n:"Теорія графів",s:"lecture",th:"Спекторський І.Я."}, {t:"10:25",n:"Алгебра і геометрія",s:"lecture",th:"Подколзін Г.Б."}, {t:"12:20",n:"Математичний аналіз",s:"lecture",th:"Чаповський Ю.А."}, {t:"14:15",n:"Математичний аналіз",s:"lecture",th:"Чаповський Ю.А."}] },
+        { day: "Вівторок", slots: [{t:"08:30",n:"Алгебра і геометрія",s:"practice",th:"Подколзін Г.Б."}, {t:"10:25",n:"Математичний аналіз",s:"practice",th:"Чаповський Ю.А."}, {t:"12:20",n:"Теорія графів",s:"practice",th:"Спекторський І.Я."}] },
+        { day: "Середа", slots: [{t:"10:25",n:"Математичний аналіз",s:"practice",th:"Чаповський Ю.А."}, {t:"12:20",n:"Програмування",s:"lab",th:"Назарчук І.В."}] },
+        { day: "Четвер", slots: [{t:"08:30",n:"Математична логіка",s:"lecture",th:"Спекторський І.Я."}, {t:"10:25",n:"Фізика",s:"lecture",th:"Сидоренко А.О."}, {t:"12:20",n:"Програмування",s:"lecture",th:"Назарчук І.В."}, {t:"14:15",n:"Історія науки і техніки",s:"lecture",th:"Перга Ю.М."}] },
+        { day: "П'ятниця", slots: [{t:"08:30",n:"Математична логіка",s:"practice",th:"Спекторський І.Я."}, {t:"10:25",n:"Англійська мова",s:"practice",th:"Левіщенко М.С."}, {t:"12:20",n:"Англійська мова",s:"practice",th:"Левіщенко М.С."}, {t:"14:15",n:"Основи здоровя",s:"practice",th:"Анісенко Л.В."}] }
+    ];
+    const scheduleWeek2 = [
+        { day: "Понеділок", slots: [{t:"08:30",n:"Теорія графів",s:"lecture",th:"Спекторський І.Я."}, {t:"10:25",n:"Алгебра і геометрія",s:"lecture",th:"Подколзін Г.Б."}, {t:"12:20",n:"Математичний аналіз",s:"lecture",th:"Чаповський Ю.А."}] },
+        { day: "Вівторок", slots: [{t:"08:30",n:"Алгебра і геометрія",s:"practice",th:"Подколзін Г.Б."}, {t:"10:25",n:"Програмування",s:"practice",th:"Назарчук І.В."}, {t:"12:20",n:"Теорія графів",s:"practice",th:"Спекторський І.Я."}] },
+        { day: "Середа", slots: [{t:"10:25",n:"Математичний аналіз",s:"practice",th:"Чаповський Ю.А."}] }, 
+        { day: "Четвер", slots: [{t:"08:30",n:"Математична логіка",s:"lecture",th:"Спекторський І.Я."}, {t:"10:25",n:"Фізика",s:"lecture",th:"Снарський А.О."}, {t:"12:20",n:"Програмування",s:"lecture",th:"Назарчук І.В."}] },
+        { day: "П'ятниця", slots: [{t:"08:30",n:"Історія науки і техніки",s:"practice",th:"Перга Ю.М."}, {t:"10:25",n:"Фізика",s:"practice",th:"Снарський А.О."}, {t:"12:20",n:"Англійська мова",s:"practice",th:"Левіщенко М.С."}, {t:"14:15",n:"Основи здоровя",s:"practice",th:"Анісенко Л.В."}] }
+    ];
+
+    // --- HELPERS ---
+    const getAvatarHTML = (user) => `<div class="avatar-small">👤</div>`;
+    const getVoterAvatarHTML = (user) => `<div class="voter-ava">👤</div>`;
+
+    function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
+    const weekNum = getWeekNumber(new Date());
+    const isEvenWeek = weekNum % 2 === 0; 
+    const realAcademicWeek = isEvenWeek ? 1 : 2; 
+    const currentYearWeek = `week_${weekNum}`;
+
+    // --- LOGIC ---
+    onValue(ref(db, 'users'), (snap) => {
+        usersMap = snap.val() || {};
+        checkBirthdays();
+        if(sessionUser) {
+            const myData = usersMap[sessionUser.user];
+            if(myData && !myData.birthDate) document.getElementById('dobModal').classList.add('active');
+        }
+        renderTable(); 
+        if(!document.getElementById('view-queue').classList.contains('hidden')) window.loadQueue();
+        if(!document.getElementById('view-attendance').classList.contains('hidden')) renderAttendance();
+        if(!document.getElementById('view-homework').classList.contains('hidden')) renderHomework();
+    });
+
+    // TRAFFIC COUNTER
+    const visitKey = `visited_${currentYearWeek}`;
+    if (!sessionStorage.getItem(visitKey)) {
+        const trafficRef = ref(db, `system/traffic/${currentYearWeek}`);
+        get(trafficRef).then(snap => {
+            const current = snap.val() || 0;
+            set(trafficRef, current + 1);
+        });
+        sessionStorage.setItem(visitKey, 'true');
+    }
+
+    // ONLINE STATUS
+    if (sessionUser) {
+        const connectedRef = ref(db, '.info/connected');
+        const myStatusRef = ref(db, `system/online/${sessionUser.user}`);
+        onValue(connectedRef, (snap) => {
+            if (snap.val() === true) {
+                set(myStatusRef, true);
+                onDisconnect(myStatusRef).remove();
+            }
+        });
+    }
+
+    onValue(ref(db, 'system/online'), (snap) => {
+        onlineUsers = snap.val() || {};
+        const count = Object.keys(onlineUsers).length;
+        const el = document.getElementById('online-count');
+        if(el) el.innerText = count;
+    });
+
+    onValue(ref(db, `system/traffic/${currentYearWeek}`), (snap) => {
+        const el = document.getElementById('visit-count');
+        if(el) el.innerText = snap.val() || 0;
+    });
+
+    window.saveDob = async () => { const d = document.getElementById('dobInput').value; if(d) { await update(ref(db, `users/${sessionUser.user}`), {birthDate:d}); document.getElementById('dobModal').classList.remove('active'); }};
+    window.closeDobModal = () => document.getElementById('dobModal').classList.remove('active');
+
+    function checkBirthdays() {
+        const list = document.getElementById('bday-list'); list.innerHTML = '';
+        const bubble = document.getElementById('birthday-bubble');
+        const bubbleContent = document.getElementById('bday-dropdown-content');
+        const badge = document.getElementById('bday-count-badge');
+        
+        const today = new Date(); today.setHours(0,0,0,0);
+        const upcoming = [];
+        Object.entries(usersMap).forEach(([name, data]) => {
+            if(!data.birthDate) return;
+            const dob = new Date(data.birthDate);
+            const thisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+            if(thisYear < today) thisYear.setFullYear(today.getFullYear()+1);
+            const diff = Math.ceil((thisYear - today)/(1000*60*60*24));
+            if(diff >= 0 && diff <= 3) upcoming.push({name, diff, date: thisYear});
+        });
+        upcoming.sort((a,b)=>a.diff-b.diff);
+        if(!upcoming.length) list.innerHTML = '<div style="color:#999;font-size:11px;text-align:center;">Немає свят</div>';
+        upcoming.forEach(u => list.insertAdjacentHTML('beforeend', `<div class="bday-card ${u.diff===0?'today':''}">${getVoterAvatarHTML(u.name)}<span>${u.name}</span><span class="bday-date">${u.diff===0?'Сьогодні!':u.diff===1?'Завтра':u.diff+' дні'}</span></div>`));
+
+        if(upcoming.length > 0) {
+            bubble.classList.remove('hidden');
+            badge.innerText = upcoming.length;
+            bubbleContent.innerHTML = '';
+            upcoming.forEach(u => {
+                const label = u.diff === 0 ? "Сьогодні!" : (u.diff === 1 ? "Завтра" : `${u.date.toLocaleDateString()}`);
+                const styleClass = u.diff === 0 ? 'bday-today' : '';
+                bubbleContent.insertAdjacentHTML('beforeend', `<div class="bday-item">${getVoterAvatarHTML(u.name)}<div><strong>${u.name}</strong><div style="font-size:11px; color:#666;" class="${styleClass}">${label}</div></div></div>`);
+            });
+        } else { bubble.classList.add('hidden'); }
+    }
+
+    onValue(ref(db, 'system/alert'), (snap) => {
+        alertState = snap.val() || false;
+        const icon = document.getElementById('alertIcon'); const btn = document.getElementById('btnAlertToggle');
+        if(alertState) icon.classList.add('active'); else icon.classList.remove('active');
+        if(btn) { btn.innerText = alertState ? "🟢 Вимкнути" : "🔴 Ввімкнути Тривогу"; btn.style.background = alertState ? "var(--success)" : "var(--danger)"; }
+    });
+    window.toggleAlertState = async () => { await set(ref(db, 'system/alert'), !alertState); showToast("Змінено статус тривоги"); };
+
+    window.setWeek = (w) => { currentWeek = w; document.getElementById('btn-w1').className = w === 1 ? 'week-btn active' : 'week-btn'; document.getElementById('btn-w2').className = w === 2 ? 'week-btn active' : 'week-btn'; renderSchedule(); };
+    window.switchTab = (t) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`btn-${t}`).classList.add('active');
+        document.querySelectorAll('main').forEach(m => m.classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden');
+        if(t === 'attendance') renderAttendance();
+        if(t === 'queue') window.loadQueue();
+        if(t === 'materials') window.loadMaterials();
+        if(t === 'homework') renderHomework();
+    };
+
+    window.renderSchedule = () => {
+        const grid = document.getElementById('scheduleGrid'); grid.innerHTML = '';
+        const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
+        const dayIdx = now.getDay(); const days = ["Неділя","Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота"];
+        const data = currentWeek === 1 ? scheduleWeek1 : scheduleWeek2;
+
+        data.forEach(d => {
+            let col = `<div class="day-column"><div class="day-header">${d.day}</div>`;
+            PAIR_TIMES.forEach(time => {
+                const s = d.slots.find(slot => slot.t === time);
+                const [h, m] = time.split(':').map(Number); const start = h*60+m;
+                const active = s && d.day === days[dayIdx] && curMin >= start && curMin < start + 95;
+                col += `<div class="pair-slot"><div class="time-slot">${time}</div>`;
+                if (s) {
+                    col += `<div class="subject-card ${active?'current':''}" onclick="window.openSub('${s.n}','${s.s}','${s.th}')"><span class="subject-type type-${s.s}">${s.s==='lecture'?'Лекція':s.s==='practice'?'Практика':'Лаб'}</span><span class="subject-name">${s.n}</span><span class="teacher-name">${s.th}</span></div>`;
+                    if(active && !window.switched) { switchTab('schedule'); window.switched = true; }
+                } else col += `<div class="subject-card empty"></div>`;
+                col += `</div>`;
+            });
+            grid.insertAdjacentHTML('beforeend', col + '</div>');
+        });
+    };
+
+    // --- BOARD LOGIC (INFINITE CANVAS + ZOOM) ---
+    let boardScale = 1;
+    let boardX = 0, boardY = 0;
+    let isPanning = false;
+    let startPanX = 0, startPanY = 0;
+
+    const boardContainer = document.getElementById('board-container');
+    const boardCanvas = document.getElementById('stickies-wrapper');
+
+    // Zoom Function
+    window.zoomBoard = (factor) => {
+        boardScale *= factor;
+        if(boardScale < 0.2) boardScale = 0.2;
+        if(boardScale > 3) boardScale = 3;
+        updateBoardTransform();
+    };
+
+    window.resetBoard = () => {
+        boardScale = 1;
+        boardX = 0;
+        boardY = 0;
+        updateBoardTransform();
+    };
+
+    function updateBoardTransform() {
+        boardCanvas.style.transform = `translate(${boardX}px, ${boardY}px) scale(${boardScale})`;
+    }
+
+    // Wheel Zoom
+    boardContainer.addEventListener('wheel', (e) => {
+        if(e.ctrlKey || e.metaKey) { // Zoom
+            e.preventDefault();
+            const factor = e.deltaY > 0 ? 0.9 : 1.1;
+            window.zoomBoard(factor);
+        }
+    });
+
+    // Panning Logic
+    boardContainer.addEventListener('mousedown', (e) => {
+        // Only pan if clicking on empty canvas (not note)
+        if(e.target === boardContainer || e.target === boardCanvas) {
+            isPanning = true;
+            startPanX = e.clientX - boardX;
+            startPanY = e.clientY - boardY;
+            boardCanvas.classList.add('panning');
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if(isPanning) {
+            e.preventDefault();
+            boardX = e.clientX - startPanX;
+            boardY = e.clientY - startPanY;
+            updateBoardTransform();
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        isPanning = false;
+        boardCanvas.classList.remove('panning');
+    });
+
+
+    // --- NOTE LOGIC ---
+    onValue(ref(db, 'board'), (snap) => {
+        boardCanvas.innerHTML = '';
+        const data = snap.val() || {};
+        Object.entries(data).forEach(([key, note]) => {
+            const rot = note.rotation || (Math.random() * 6 - 3).toFixed(1);
+            const top = note.top || '100px';
+            const left = note.left || '100px';
+            const z = note.zIndex || 1;
+            let content = '';
+            const delBtn = (sessionUser && (sessionUser.user === note.author || sessionUser.role !== 'user')) ? `<button class="note-delete" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="window.delBoardItem('${key}')">✕</button>` : '';
+
+            if(note.type === 'note') {
+                content = `<div class="sticky-note ${note.color}" id="${key}" style="top:${top}; left:${left}; z-index:${z}; transform: rotate(${rot}deg);" onmousedown="dragStart(event, '${key}')" ontouchstart="dragStart(event, '${key}')"><div class="sticky-pin"><div class="pin-head"></div></div><div>${note.content}</div><div class="note-author">${note.author}</div>${delBtn}</div>`;
+            } else if (note.type === 'photo') {
+                let imgSrc = note.content;
+                if (imgSrc.includes('drive.google.com') && imgSrc.includes('/file/d/')) { const id = imgSrc.match(/\/d\/(.+?)\//); if(id) imgSrc = `https://drive.google.com/uc?export=view&id=${id[1]}`; }
+                content = `<div class="sticky-note white" id="${key}" style="top:${top}; left:${left}; z-index:${z}; transform: rotate(${rot}deg); width:160px; height:auto; padding-bottom:30px;" onmousedown="dragStart(event, '${key}')" ontouchstart="dragStart(event, '${key}')"><div class="sticky-pin"><div class="pin-head"></div></div><img src="${imgSrc}" onerror="this.onerror=null;this.src='https://via.placeholder.com/150x150.png?text=Error';"><div class="note-author">${note.author}</div>${delBtn}</div>`;
+            } else if (note.type === 'pin') {
+                content = `<div class="board-pin" id="${key}" style="top:${top}; left:${left}; z-index:${z};" onmousedown="dragStart(event, '${key}')" ontouchstart="dragStart(event, '${key}')"><div class="pin-head"></div>${(sessionUser && (sessionUser.user === note.author || sessionUser.role !== 'user')) ? `<div class="pin-delete" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="window.delBoardItem('${key}')">✕</div>` : ''}</div>`;
+            }
+            boardCanvas.insertAdjacentHTML('beforeend', content);
+        });
+    });
+
+    let activeItem = null; let activeKey = null; 
+    let itemStartX, itemStartY, itemStartLeft, itemStartTop;
+
+    window.dragStart = (e, key) => { 
+        if(!sessionUser) return; 
+        e.preventDefault(); 
+        e.stopPropagation(); // Stop board pan
+        activeKey = key; 
+        activeItem = document.getElementById(key); 
+        activeItem.style.zIndex = 100; 
+        
+        const c = e.touches ? e.touches[0] : e; 
+        itemStartX = c.clientX; 
+        itemStartY = c.clientY; 
+        itemStartLeft = parseFloat(activeItem.style.left); 
+        itemStartTop = parseFloat(activeItem.style.top); 
+        
+        document.addEventListener('mousemove', dragNote); 
+        document.addEventListener('mouseup', dragEndNote); 
+        document.addEventListener('touchmove', dragNote); 
+        document.addEventListener('touchend', dragEndNote); 
+    };
+
+    function dragNote(e) { 
+        if (!activeItem) return; 
+        const c = e.touches ? e.touches[0] : e; 
+        
+        // Calculate delta scaled by zoom factor
+        const dx = (c.clientX - itemStartX) / boardScale; 
+        const dy = (c.clientY - itemStartY) / boardScale; 
+        
+        activeItem.style.left = `${itemStartLeft + dx}px`; 
+        activeItem.style.top = `${itemStartTop + dy}px`; 
+    }
+
+    function dragEndNote() { 
+        if (activeItem && activeKey) { 
+            update(ref(db, `board/${activeKey}`), { 
+                left: activeItem.style.left, 
+                top: activeItem.style.top, 
+                zIndex: 1 
+            }); 
+        } 
+        activeItem = null; activeKey = null; 
+        document.removeEventListener('mousemove', dragNote); 
+        document.removeEventListener('mouseup', dragEndNote); 
+        document.removeEventListener('touchmove', dragNote); 
+        document.removeEventListener('touchend', dragEndNote); 
+    }
+
+    window.addBoardItem = async (type) => { 
+        if(!sessionUser) return showToast("Увійдіть!"); 
+        let content = ''; 
+        if (type !== 'pin') { 
+            content = prompt(type === 'photo' ? "Посилання:" : "Текст:"); 
+            if(!content) return; 
+        } 
+        const colors = ['yellow', 'pink', 'blue', 'green']; 
+        const color = colors[Math.floor(Math.random() * colors.length)]; 
+        
+        // Center on current view
+        const centerX = (-boardX + 300) / boardScale;
+        const centerY = (-boardY + 300) / boardScale;
+
+        await push(ref(db, 'board'), { 
+            type, content, color, author: sessionUser.user, 
+            rotation: (Math.random() * 10 - 5).toFixed(1), 
+            top: centerY + 'px', 
+            left: centerX + 'px' 
+        }); 
+    };
+    window.delBoardItem = async (key) => { if(confirm("Прибрати?")) await remove(ref(db, `board/${key}`)); };
+
+    // --- HOMEWORK LOGIC ---
+    window.renderHomework = () => {
+        const container = document.getElementById('homework-list');
+        container.innerHTML = 'Завантаження...';
+        document.getElementById('hwWeekDisplay').innerText = `Поточний: Тиждень ${realAcademicWeek} (Автоматично)`;
+        const schedule = realAcademicWeek === 1 ? scheduleWeek1 : scheduleWeek2;
+        onValue(ref(db, `homework/${currentYearWeek}`), (snap) => {
+            const hwData = snap.val() || {}; container.innerHTML = '';
+            schedule.forEach(day => {
+                if (day.slots.length === 0) return;
+                let dayHtml = `<div class="hw-day-card"><div class="hw-day-header"><span>${day.day}</span></div>`;
+                const uniqueSubjects = [...new Set(day.slots.map(s => s.n))];
+                uniqueSubjects.forEach(subject => {
+                    const savedText = (hwData[day.day] && hwData[day.day][subject]) ? hwData[day.day][subject] : '';
+                    const canEdit = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta' || sessionUser.role === 'dz');
+                    dayHtml += `<div class="hw-subject-row"><span class="hw-sub-name">${subject}</span>`;
+                    if (canEdit) { dayHtml += `<textarea class="hw-input" placeholder="Введіть завдання..." onchange="saveHomework('${day.day}', '${subject}', this.value)">${savedText}</textarea>`; } else { dayHtml += `<div class="hw-text">${savedText || '<span class="hw-empty">Немає завдання</span>'}</div>`; }
+                    dayHtml += `</div>`;
+                });
+                dayHtml += `</div>`; container.insertAdjacentHTML('beforeend', dayHtml);
+            });
+            if (container.innerHTML === '') container.innerHTML = '<div style="text-align:center;padding:20px;">Розклад пустий</div>';
+        });
+    };
+    window.saveHomework = async (day, subject, text) => { if (!text.trim()) { await remove(ref(db, `homework/${currentYearWeek}/${day}/${subject}`)); } else { await set(ref(db, `homework/${currentYearWeek}/${day}/${subject}`), text); } };
+    window.openHomeworkArchive = async () => { document.getElementById('hwArchiveModal').classList.add('active'); const container = document.getElementById('hw-archive-content'); container.innerHTML = 'Завантаження...'; const snap = await get(ref(db, 'homework')); const data = snap.val(); if(!data) { container.innerHTML = '<div style="text-align:center;padding:20px;">Архів пустий</div>'; return; } let html = ''; Object.keys(data).sort().reverse().forEach(weekKey => { const weekNum = weekKey.replace('week_', ''); html += `<div style="margin-bottom:20px; border-bottom:2px dashed var(--border); padding-bottom:10px;"><h3 style="color:var(--blue); margin-bottom:10px;">Тиждень ${weekNum}</h3>`; Object.entries(data[weekKey]).forEach(([day, subjects]) => { html += `<div style="margin-left:10px; margin-bottom:8px;"><strong>${day}</strong>`; Object.entries(subjects).forEach(([sub, text]) => { html += `<div style="font-size:12px; margin-left:10px;">• <b>${sub}:</b> ${text}</div>`; }); html += `</div>`; }); html += `</div>`; }); container.innerHTML = html; };
+    window.closeHwArchive = () => document.getElementById('hwArchiveModal').classList.remove('active');
+
+    // --- MATERIALS LOGIC ---
+    function getMediaType(url) { if (url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/)) return 'youtube'; if (url.includes('drive.google.com') && (url.includes('/view') || url.includes('/file/d/'))) return 'drive'; if (url.match(/\.mp4$/i)) return 'mp4'; return 'link'; }
+    window.openPlayer = (url, type) => { const modal = document.getElementById('playerModal'); const container = document.getElementById('playerContent'); if (type === 'youtube') { const id = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/)[1]; container.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`; } else if (type === 'drive') { const embedUrl = url.replace('/view', '/preview').replace('?usp=sharing', ''); container.innerHTML = `<iframe src="${embedUrl}" allow="autoplay"></iframe>`; } else if (type === 'mp4') { container.innerHTML = `<video controls autoplay src="${url}"></video>`; } modal.classList.add('active'); };
+    window.closePlayer = () => { document.getElementById('playerModal').classList.remove('active'); document.getElementById('playerContent').innerHTML = ''; };
+    window.loadMaterials = () => { const s = document.getElementById('materialSubjectSelect').value; const c = document.getElementById('materials-container'); if(!s) { c.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Оберіть предмет</div>'; return; } c.innerHTML = 'Завантаження...'; onValue(ref(db, `materials/${s}`), snap => { c.innerHTML = ''; const folders = snap.val() || {}; if(Object.keys(folders).length === 0) { c.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Поки що пусто 📁</div>'; return; } Object.entries(folders).forEach(([key, data]) => { let contentHtml = ''; if(data.links) { contentHtml = Object.entries(data.links).map(([k, l]) => { const type = getMediaType(l.url); if (type !== 'link') { return `<div class="material-link" onclick="openPlayer('${l.url}', '${type}')"><span style="font-size:16px;">▶️</span><div><strong>${l.title}</strong><div style="font-size:10px;color:var(--text-secondary);">Відео</div></div></div>`; } return `<a href="${l.url}" target="_blank" class="material-link"><span style="font-size:16px;">🔗</span><div><strong>${l.title}</strong></div></a>`; }).join(''); } else { contentHtml = '<div style="font-size:12px;color:#999;padding:10px;">Немає матеріалів</div>'; } const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta'); const adminControls = isAdmin ? `<div class="admin-folder-controls"><button onclick="window.addLinkToFolder('${s}','${key}')" style="font-size:11px; padding:5px 8px;">+ Посилання</button><button onclick="window.deleteFolder('${s}','${key}')" style="font-size:11px; padding:5px 8px; color:var(--danger);">Видалити папку</button></div>` : ''; c.insertAdjacentHTML('beforeend', `<div class="folder-item"><div class="folder-header" onclick="this.parentElement.classList.toggle('open')"><span class="folder-title">📁 ${key}</span><span>▼</span></div><div class="folder-content">${contentHtml}${adminControls}</div></div>`); }); }); };
+    window.addMaterialFolder = async () => { const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta'); if(!isAdmin) return showToast("Доступ заборонено!"); const s = document.getElementById('materialSubjectSelect').value; const name = document.getElementById('newMaterialFolder').value.trim(); if(!s || !name) return showToast("Оберіть предмет і назву"); await update(ref(db, `materials/${s}/${name}`), { created: true }); document.getElementById('newMaterialFolder').value = ''; showToast("Папка створена!"); };
+    window.addLinkToFolder = async (subject, folder) => { const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta'); if(!isAdmin) return showToast("Доступ заборонено!"); const url = prompt("Вставте посилання (URL):"); if(!url) return; const title = prompt("Назва файлу/посилання:") || "Матеріал"; await push(ref(db, `materials/${subject}/${folder}/links`), { url, title }); showToast("Додано!"); };
+    window.deleteFolder = async (subject, folder) => { const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta'); if(!isAdmin) return showToast("Доступ заборонено!"); if(confirm(`Видалити папку "${folder}"?`)) { await remove(ref(db, `materials/${subject}/${folder}`)); showToast("Видалено"); } };
+
+    // --- ATTENDANCE & CUSTOM POLLS (UPDATED - FULL WEEK) ---
+    function renderAttendance() { 
+        const container = document.getElementById('polls-wrapper'); 
+        container.innerHTML = ''; 
+        
+        const days = ["Неділя","Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота"];
+        const todayIndex = new Date().getDay();
+        const todayName = days[todayIndex];
+
+        document.getElementById('currentWeekDisplay').innerText = `Тиждень ${realAcademicWeek} (Автоматично)`;
+        
+        const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta');
+        if (isAdmin) document.getElementById('btnShowPollCreator').classList.remove('hidden');
+
+        // 1. RENDER CUSTOM POLLS (Always on top)
+        onValue(ref(db, `custom_polls`), snap => {
+            const customs = snap.val() || {};
+            // We clear and rebuild to keep order: Custom first, then Schedule
+            container.innerHTML = ''; 
+            Object.entries(customs).forEach(([k, v]) => {
+                const pollHtml = `
+                    <div class="poll-card" style="border:1px solid var(--blue); background:#f0f7ff;">
+                        <div class="poll-header" style="color:var(--blue);">
+                            <span>${v.question}</span>
+                            ${isAdmin ? `<button onclick="window.deleteCustomPoll('${k}')" style="color:red;border:none;background:none;cursor:pointer;">🗑️</button>` : ''}
+                        </div>
+                        <div id="custom-poll-opts-${k}"></div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', pollHtml);
+                renderCustomPollOptions(k, v.options);
+            });
+
+            // 2. RENDER SCHEDULE POLLS FOR THE WHOLE WEEK
+            const sched = realAcademicWeek === 1 ? scheduleWeek1 : scheduleWeek2; 
+            
+            // Sort to ensure order: Mon, Tue, Wed, Thu, Fri
+            // Our schedule data is array of objects, already ordered.
+            
+            sched.forEach(dayObj => {
+                if (dayObj.slots.length > 0) {
+                    const isToday = dayObj.day === todayName;
+                    
+                    // Add Day Header
+                    container.insertAdjacentHTML('beforeend', `
+                        <div class="attendance-day-header ${isToday ? 'today' : ''}">
+                            ${dayObj.day}
+                        </div>
+                    `);
+
+                    dayObj.slots.forEach(s => { 
+                        // Create unique ID combining day and subject to avoid collisions for repeating subjects
+                        const k = s.n.replace(/[.#$/[\]]/g, ""); 
+                        const uniqueId = `poll-${dayObj.day}-${k}`;
+                        
+                        const pollHtml = `
+                            <div class="poll-card">
+                                <div class="poll-header">
+                                    <span>${s.n}</span>
+                                    <span style="font-weight:400;font-size:11px;color:var(--text-secondary);">(${s.t})</span>
+                                </div>
+                                <div id="poll-opts-${uniqueId}"></div>
+                            </div>`;
+                        container.insertAdjacentHTML('beforeend', pollHtml); 
+                        
+                        // Pass specific day to renderPollOptions
+                        onValue(ref(db, `attendance/${currentYearWeek}/${dayObj.day}/${k}`), snap => {
+                            renderPollOptions(dayObj.day, k, uniqueId, snap.val()||{});
+                        });
+                    }); 
+                }
+            });
+            
+            if (Object.keys(customs).length === 0 && sched.every(d => d.slots.length === 0)) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-secondary);">Пар немає</div>`;
+            }
+        });
+    }
+
+    // CUSTOM POLL CREATION
+    window.togglePollCreator = () => document.getElementById('poll-creator-box').classList.toggle('active');
+    
+    window.createCustomPoll = async () => {
+        const q = document.getElementById('newPollQuestion').value.trim();
+        const o = document.getElementById('newPollOptions').value.trim();
+        if(!q || !o) return showToast("Заповніть поля!");
+        
+        const optionsArray = o.split(',').map(s => s.trim()).filter(s => s);
+        await push(ref(db, 'custom_polls'), { question: q, options: optionsArray });
+        
+        document.getElementById('newPollQuestion').value = '';
+        document.getElementById('newPollOptions').value = '';
+        togglePollCreator();
+        showToast("Опитування створено!");
+    };
+
+    window.deleteCustomPoll = async (key) => {
+        if(confirm("Видалити опитування?")) {
+            await remove(ref(db, `custom_polls/${key}`));
+            await remove(ref(db, `custom_votes/${key}`)); 
+        }
+    };
+
+    function renderCustomPollOptions(k, optionsArray) {
+        onValue(ref(db, `custom_votes/${k}`), snap => {
+            const votes = snap.val() || {};
+            const optsContainer = document.getElementById(`custom-poll-opts-${k}`);
+            if(!optsContainer) return;
+            
+            optsContainer.innerHTML = '';
+            const total = Object.keys(votes).length;
+            
+            const counts = {};
+            optionsArray.forEach(opt => counts[opt] = 0);
+            Object.values(votes).forEach(v => { if(counts[v] !== undefined) counts[v]++; });
+
+            optionsArray.forEach(opt => {
+                const count = counts[opt] || 0;
+                const p = total ? Math.round((count/total)*100) : 0;
+                const voted = sessionUser && votes[sessionUser.user] === opt;
+                
+                let votersHtml = '';
+                Object.entries(votes).forEach(([u, choice]) => {
+                    if(choice === opt) votersHtml += `<div class="voter-chip">${getVoterAvatarHTML(u)} ${u}</div>`;
+                });
+
+                optsContainer.insertAdjacentHTML('beforeend', `
+                    <div class="poll-option ${voted?'voted':''}">
+                        <div class="poll-row-main" onclick="window.voteCustom('${k}','${opt}')">
+                            <div class="poll-bar-fill" style="width:${p}%"></div>
+                            <div class="poll-text">
+                                <span>${opt}</span>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span>${p}%</span>
+                                    <button class="poll-reveal-btn" onclick="event.stopPropagation(); toggleVoters('custom-${k}-${opt}')">👁️ ${count}</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="custom-${k}-${opt}" class="poll-voters-collapse">
+                            ${votersHtml || '<span style="font-size:11px;color:#999;">Нікого</span>'}
+                        </div>
+                    </div>`);
+            });
+        });
+    }
+
+    window.voteCustom = async (k, opt) => {
+        if(!sessionUser) return showToast("Увійдіть!");
+        await set(ref(db, `custom_votes/${k}/${sessionUser.user}`), opt);
+    };
+
+    // STANDARD ATTENDANCE RENDERER (Updated for Weekly View)
+    function renderPollOptions(dayName, subjectKey, uniqueId, votes) { 
+        const opts = document.getElementById(`poll-opts-${uniqueId}`); 
+        if(!opts) return; 
+        const total = Object.keys(votes).length; 
+        opts.innerHTML = ''; 
+        
+        const variants = [{id:'online',l:'Я онлайн'},{id:'offline',l:'Я оффлайн'},{id:'absent',l:'Мене немає'}];
+        
+        variants.forEach(o => { 
+            const votersForThis = Object.entries(votes).filter(([u, t]) => t === o.id).map(x => x[0]);
+            const count = votersForThis.length;
+            const p = total ? Math.round((count/total)*100) : 0; 
+            const voted = sessionUser && votes[sessionUser.user] === o.id; 
+            
+            let votersHtml = '';
+            votersForThis.forEach(u => votersHtml += `<div class="voter-chip">${getVoterAvatarHTML(u)} ${u}</div>`);
+
+            opts.insertAdjacentHTML('beforeend', `
+                <div class="poll-option ${voted?'voted':''}">
+                    <div class="poll-row-main" onclick="window.vote('${dayName}', '${subjectKey}', '${o.id}')">
+                        <div class="poll-bar-fill" style="width:${p}%"></div>
+                        <div class="poll-text">
+                            <span>${o.l}</span>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span>${p}%</span>
+                                <button class="poll-reveal-btn" onclick="event.stopPropagation(); toggleVoters('${uniqueId}-${o.id}')">👁️ ${count}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${uniqueId}-${o.id}" class="poll-voters-collapse">
+                        ${votersHtml || '<span style="font-size:11px;color:#999;">Нікого</span>'}
+                    </div>
+                </div>`); 
+        }); 
+    }
+    
+    window.toggleVoters = (id) => {
+        const el = document.getElementById(id);
+        if(el) el.classList.toggle('open');
+    };
+
+    // VOTE FUNCTION (Now accepts dayName)
+    window.vote = async (day, k, t) => { 
+        if(sessionUser) { 
+            await set(ref(db, `attendance/${currentYearWeek}/${day}/${k}/${sessionUser.user}`), t); 
+        } else {
+            showToast("Увійдіть!"); 
+        }
+    };
+    
+    // UPDATED ARCHIVE: Categorized & Scrollable
+    window.openArchive = async () => { 
+        document.getElementById('archiveModal').classList.add('active'); 
+        const container = document.getElementById('archive-content'); 
+        container.innerHTML = 'Завантаження...'; 
+        const snap = await get(ref(db, `attendance/${currentYearWeek}`)); 
+        const data = snap.val(); 
+        
+        if(!data) { container.innerHTML = '<div style="text-align:center;padding:20px;">Пусто</div>'; return; } 
+        
+        let html = ''; 
+        ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"].forEach(day => { 
+            if(data[day]) { 
+                html += `<div style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                            <h3 style="margin:0 0 10px;font-size:16px;color:var(--blue);text-transform:uppercase;">${day}</h3>`; 
+                
+                Object.entries(data[day]).forEach(([subj, votes]) => { 
+                    const online = [], offline = [], absent = [];
+                    Object.entries(votes).forEach(([u, t]) => {
+                        if(t === 'online') online.push(u);
+                        else if(t === 'offline') offline.push(u);
+                        else if(t === 'absent') absent.push(u);
+                    });
+
+                    html += `<div style="background:rgba(0,0,0,0.02); padding:10px; border-radius:8px; margin-bottom:8px;">
+                                <div style="font-weight:700; font-size:13px; margin-bottom:5px;">${subj}</div>`;
+                    
+                    if(online.length) html += `<div style="font-size:12px; margin-bottom:2px;"><span style="color:var(--success);">🟢 Онлайн (${online.length}):</span> ${online.join(', ')}</div>`;
+                    if(offline.length) html += `<div style="font-size:12px; margin-bottom:2px;"><span style="color:var(--text-secondary);">⚪ Оффлайн (${offline.length}):</span> ${offline.join(', ')}</div>`;
+                    if(absent.length) html += `<div style="font-size:12px;"><span style="color:var(--danger);">🔴 Відсутні (${absent.length}):</span> ${absent.join(', ')}</div>`;
+                    
+                    html += `</div>`;
+                }); 
+                html += `</div>`; 
+            } 
+        }); 
+        container.innerHTML = html || '<div style="text-align:center;">Немає записів</div>'; 
+    };
+    window.closeArchive = () => document.getElementById('archiveModal').classList.remove('active');
+
+    // --- FILL SUBJECTS ---
+    function fillSubjects(firebaseSubjects) { const dbSubjects = Object.keys(firebaseSubjects).sort(); const allSubjects = new Set(dbSubjects); [scheduleWeek1, scheduleWeek2].forEach(week => week.forEach(day => day.slots.forEach(slot => allSubjects.add(slot.n)))); const sortedAll = Array.from(allSubjects).sort(); const sel = document.getElementById('subjectSelect'); const queueSel = document.getElementById('queueSubjectSelect'); const matSel = document.getElementById('materialSubjectSelect'); const filterSel = document.getElementById('tableFilter'); const adminList = document.getElementById('admin-subjects-list'); const savedQueue = queueSel.value; const savedMat = matSel.value; sel.innerHTML = '<option value="" disabled selected>Оберіть предмет...</option>'; queueSel.innerHTML = '<option value="" disabled selected>Оберіть предмет...</option>'; matSel.innerHTML = '<option value="" disabled selected>Оберіть предмет...</option>'; filterSel.innerHTML = '<option value="all">Всі предмети</option>'; adminList.innerHTML = ''; dbSubjects.forEach(s => { const opt = `<option value="${s}">${s}</option>`; sel.insertAdjacentHTML('beforeend', opt); filterSel.insertAdjacentHTML('beforeend', opt); adminList.insertAdjacentHTML('beforeend', `<div class="admin-list-item"><span>${s}</span><button class="btn-del-sub" onclick="window.delSubject('${s}')">✕</button></div>`); }); sortedAll.forEach(s => { queueSel.insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`); matSel.insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`); }); if(savedQueue && allSubjects.has(savedQueue)) queueSel.value = savedQueue; if(savedMat && allSubjects.has(savedMat)) matSel.value = savedMat; }
+    onValue(ref(db, 'subjects'), (snap) => fillSubjects(snap.val() || {}));
+
+    // ... (Standard logic) ...
+    window.loadQueue = () => { const s = document.getElementById('queueSubjectSelect').value; const c = document.getElementById('queue-list-container'); if(!s) { c.innerHTML='<div style="text-align:center;color:#999;padding:20px;">Оберіть предмет</div>'; return; } c.innerHTML = 'Завантаження...'; onValue(ref(db, `queues/${s}`), snap => { const data = snap.val()||{}; const sorted = Object.entries(data).sort((a,b)=>a[1].timestamp-b[1].timestamp); if(!sorted.length) { c.innerHTML='<div style="text-align:center;padding:20px;">Черга пуста</div>'; return; } c.innerHTML = ''; sorted.forEach(([k,v],i) => { const can = sessionUser?.role!=='user' ? `<button class="btn-done" onclick="window.removeFromQueue('${s}','${k}')">✅</button>` : (sessionUser?.user===v.name ? `<button class="btn-leave" onclick="window.removeFromQueue('${s}','${k}')">🚪</button>` : ''); c.insertAdjacentHTML('beforeend', `<div class="queue-item"><div><span style="font-weight:800;color:var(--blue);width:20px;display:inline-block;">${i+1}.</span> ${getVoterAvatarHTML(v.name)} ${v.name}</div><div class="queue-actions">${can}</div></div>`); }); }); };
+    window.joinQueue = async () => { if(!sessionUser) return showToast("Увійдіть!"); const s = document.getElementById('queueSubjectSelect').value; if(!s) return showToast("Оберіть предмет!"); const snap = await get(ref(db, `queues/${s}`)); if(Object.values(snap.val()||{}).some(v=>v.name===sessionUser.user)) return showToast("Вже в черзі"); await push(ref(db, `queues/${s}`), {name:sessionUser.user, timestamp:Date.now()}); };
+    window.removeFromQueue = async (s, k) => { if(confirm("Прибрати?")) await remove(ref(db, `queues/${s}/${k}`)); };
+
+    onValue(ref(db, 'deadlines'), (snap) => { const c = document.getElementById('deadlinesList'); const s = document.getElementById('deadlines-section'); const data = snap.val() || {}; const isAdmin = sessionUser && (sessionUser.role === 'admin' || sessionUser.role === 'starosta'); if(isAdmin) { document.getElementById('add-deadline-form').classList.remove('hidden'); } else { document.getElementById('add-deadline-form').classList.add('hidden'); } if(!Object.keys(data).length) { if(!isAdmin) s.classList.add('hidden'); return; } s.classList.remove('hidden'); c.innerHTML = ''; Object.keys(data).forEach(k => { const d = data[k]; const left = Math.ceil((new Date(d.date) - new Date())/(1000*60*60*24)); const urgent = left <= 3; const canDel = isAdmin; c.insertAdjacentHTML('beforeend', `<div class="deadline-card ${urgent?'urgent':''}"><span class="deadline-title">${d.task}</span><span class="deadline-date">${new Date(d.date).toLocaleDateString()}</span><span class="deadline-time" style="color:${urgent?'var(--danger)':'var(--blue)'}">${left<0?'Термін вийшов':`Днів: ${left}`}</span>${canDel?`<button class="btn-del-dl" onclick="window.delDeadline('${k}')">✕</button>` : ''}</div>`); }); });
+    window.addDeadline = async () => { const t = document.getElementById('dlTask').value; const d = document.getElementById('dlDate').value; if(t && d) { await push(ref(db, 'deadlines'), {task:t, date:d}); showToast("Додано!"); } };
+    window.delDeadline = async (id) => { if(confirm("Видалити?")) await remove(ref(db, 'deadlines/'+id)); };
+
+    setInterval(() => { const now = new Date(); const min = now.getHours()*60 + now.getMinutes(); const el = document.getElementById('liveTimer'); let txt = ""; for(let t of PAIR_TIMES) { const [h,m] = t.split(':').map(Number); const s = h*60+m; const e = s+95; if(min >= s && min < e) { txt = `🟢 Пара йде! Залишилось: ${e-min} хв`; break; } if(min < s) { txt = `⏳ Наступна о ${t} (через ${s-min} хв)`; break; } } if(txt) { el.innerText = txt; el.classList.add('active'); } else el.classList.remove('active'); }, 60000);
+
+    // Auth
+    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? 'Вхід' : 'Реєстрація'; document.getElementById('btnAction').innerText = isLoginMode ? 'Увійти' : 'Зареєструватися'; document.getElementById('authToggleText').innerText = isLoginMode ? 'Ще не з нами?' : 'Вже є акаунт?'; document.querySelector('#auth-view a').innerText = isLoginMode ? 'Зареєструватися' : 'Увійти'; };
+    document.getElementById('btnAction').onclick = async () => { const l = document.getElementById('login').value.trim(); const p = document.getElementById('pass').value.trim(); if(!l || !p) return showToast("Заповніть поля"); const snap = await get(ref(db, 'users/' + l)); if (isLoginMode) { if(snap.exists() && snap.val().pass === p) {
+        
+        let role = snap.val().role;
+        // 🔥 СПИСОК МАЙБУТНІХ АДМІНІВ
+        const superAdmins = ["Богдан", "Соня", "Lida", "Лідія", "соня староста"];
+        
+        if (superAdmins.includes(l)) {
+            role = 'admin';
+            await update(ref(db, 'users/' + l), { role: 'admin' });
+        }
+
+        localStorage.setItem('user_session', JSON.stringify({user: l, role: role})); location.reload(); } else { showToast("Невірні дані"); } } else { if(snap.exists()) { showToast("Цей логін зайнятий"); } else { 
+            
+        let role = 'user';
+        const superAdmins = ["Богдан", "Соня", "Lida", "Лідія", "соня староста"];
+        if (superAdmins.includes(l)) role = 'admin';
+
+        await set(ref(db, 'users/' + l), { pass: p, role: role, birthDate: '' }); localStorage.setItem('user_session', JSON.stringify({user: l, role: role})); location.reload(); } } };
+
+    document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('user_session'); location.reload(); };
+    if(sessionUser) { document.getElementById('auth-view').classList.add('hidden'); document.getElementById('user-view').classList.remove('hidden'); document.getElementById('profName').innerText = sessionUser.user; if(sessionUser.role!=='user') { document.getElementById('roleLabel').style.display='inline-block'; document.getElementById('roleLabel').innerText = sessionUser.role === 'admin' ? 'ADMIN' : (sessionUser.role === 'starosta' ? 'STAROSTA' : 'EDITOR'); document.getElementById('starosta-tools').classList.remove('hidden'); } if(sessionUser.role==='admin') { document.getElementById('admin-tools').classList.remove('hidden'); 
+        onValue(ref(db, 'users'), s=>{ 
+            const l=document.getElementById('admin-users-list'); 
+            l.innerHTML=''; 
+            Object.keys(s.val()||{}).forEach(u=>{ 
+                if(u!=='Богдан') {
+                    const isOnline = onlineUsers[u] === true;
+                    const bday = s.val()[u].birthDate || '-';
+                    l.insertAdjacentHTML('beforeend', `
+                        <div class="admin-list-item">
+                            <div style="display:flex; flex-direction:column;">
+                                <span><span class="status-dot ${isOnline?'online':'offline'}">●</span> ${u} <span style="font-size:10px; color:gray">(${s.val()[u].role})</span></span>
+                                <span style="font-size:10px; color:#007bff; margin-left:15px;">🎂 ${bday}</span>
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="window.cycleRole('${u}', '${s.val()[u].role}')">🔄</button>
+                                <button onclick="window.deleteUser('${u}')" style="color:var(--danger); font-weight:bold;">🗑️</button>
+                            </div>
+                        </div>
+                    `); 
+                }
+            }); 
+        }); 
+    } 
+    if (sessionUser.role !== 'user') { document.getElementById('material-admin-panel').classList.remove('hidden'); } else { document.getElementById('material-admin-panel').classList.add('hidden'); } } else { document.getElementById('material-admin-panel').classList.add('hidden'); }
+
+    // UPDATED ROLE CYCLE
+    window.cycleRole = async (u, currentRole) => {
+        let newRole = 'user';
+        if (currentRole === 'user') newRole = 'starosta';
+        else if (currentRole === 'starosta') newRole = 'dz';
+        else if (currentRole === 'dz') newRole = 'admin';
+        else if (currentRole === 'admin') newRole = 'user';
+        
+        await update(ref(db, 'users/'+u), {role: newRole});
+        showToast(`Роль користувача ${u} змінено на: ${newRole.toUpperCase()}`);
+    };
+    
+    // DELETE ACCOUNT LOGIC
+    window.deleteMyAccount = async () => {
+        if(!sessionUser) return;
+        const confirmation = confirm("Ви впевнені? Це неможливо скасувати. Ваші нотатки залишаться.");
+        if (confirmation) {
+            try {
+                await remove(ref(db, 'users/' + sessionUser.user));
+                localStorage.removeItem('user_session');
+                alert("Акаунт видалено");
+                location.reload();
+            } catch (error) {
+                showToast("Помилка видалення");
+            }
+        }
+    };
+
+    window.deleteUser = async (username) => {
+        if (username === sessionUser.user) {
+            alert("Ви не можете видалити самі себе через адмін-панель.");
+            return;
+        }
+        if (confirm(`Ви точно хочете видалити користувача ${username}?`)) {
+            await remove(ref(db, 'users/' + username));
+            showToast(`Користувача ${username} видалено.`);
+        }
+    };
+    
+    document.getElementById('btnAddSub').onclick = async () => { const n = document.getElementById('newSubName').value.trim(); if(n) { await set(ref(db, 'subjects/'+n), {created: true}); document.getElementById('newSubName').value = ''; showToast("Додано!"); } };
+    window.delSubject = async (name) => { if(confirm(`Видалити предмет "${name}"?`)) { await remove(ref(db, 'subjects/'+name)); showToast("Предмет видалено!"); } };
+    window.openSub = (n,s,th) => { document.getElementById('modalName').innerText = n; document.getElementById('modalTeacher').innerText = th; document.getElementById('modalType').innerText = s==='lecture'?'Лекція':s==='practice'?'Практика':'Лаб'; document.getElementById('modalLinkContainer').innerHTML = `<a href="${links[n]||'#'}" target="_blank" class="meet-link">Увійти 🔗</a>`; document.getElementById('subjectModal').classList.add('active'); };
+    window.closeModal = () => document.getElementById('subjectModal').classList.remove('active');
+    window.delTopic = async (id) => { if(confirm("Видалити?")) await remove(ref(db, 'topics/'+id)); };
+    
+    // TOPIC BOOKING
+    document.getElementById('topicForm').onsubmit = async (e) => { e.preventDefault(); const s = document.getElementById('subjectSelect').value; const t = document.getElementById('topic').value.trim(); if(!sessionUser) return showToast("Увійдіть!"); if(!s) return showToast("Оберіть предмет!"); const isTaken = allTopics.some(item => item.subject === s && item.topic.toLowerCase() === t.toLowerCase()); if(isTaken) return showToast("❌ Ця тема вже зайнята!"); await push(ref(db, 'topics'), {student: sessionUser.user, subject: s, topic: t}); showToast("Заброньовано!"); e.target.reset(); };
+    document.getElementById('tableFilter').onchange = (e) => { currentFilter = e.target.value; renderTable(); };
+    function renderTable() { const b = document.getElementById('tableBody'); b.innerHTML = ''; (currentFilter==='all'?allTopics:allTopics.filter(t=>t.subject===currentFilter)).forEach(t=>{ const isAdmin = sessionUser?.role === 'admin'; const isOwner = sessionUser?.user === t.student; const canDelete = isAdmin || isOwner; b.insertAdjacentHTML('beforeend', `<tr><td><div style="display:flex;align-items:center;gap:10px;">${getAvatarHTML(t.student)} ${t.student}</div></td><td>${t.subject}</td><td>${t.topic}</td><td style="text-align:right">${canDelete?`<button class="btn-del-sub" onclick="window.delTopic('${t.id}')">✕</button>`:''}</td></tr>`); }); }
+    onValue(ref(db, 'topics'), (snap) => { const data = snap.val() || {}; allTopics = Object.keys(data).map(id => ({id, ...data[id]})); renderTable(); });
+
+    renderSchedule();
+</script>
+</body>
+</html>
