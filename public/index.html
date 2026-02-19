@@ -1134,25 +1134,79 @@
     setInterval(() => { const now = new Date(); const min = now.getHours()*60 + now.getMinutes(); const el = document.getElementById('liveTimer'); let txt = ""; for(let t of PAIR_TIMES) { const [h,m] = t.split(':').map(Number); const s = h*60+m; const e = s+95; if(min >= s && min < e) { txt = `🟢 Пара йде! Залишилось: ${e-min} хв`; break; } if(min < s) { txt = `⏳ Наступна о ${t} (через ${s-min} хв)`; break; } } if(txt) { el.innerText = txt; el.classList.add('active'); } else el.classList.remove('active'); }, 60000);
 
     // Auth
-    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? 'Вхід' : 'Реєстрація'; document.getElementById('btnAction').innerText = isLoginMode ? 'Увійти' : 'Зареєструватися'; document.getElementById('authToggleText').innerText = isLoginMode ? 'Ще не з нами?' : 'Вже є акаунт?'; document.querySelector('#auth-view a').innerText = isLoginMode ? 'Зареєструватися' : 'Увійти'; };
-    document.getElementById('btnAction').onclick = async () => { const l = document.getElementById('login').value.trim(); const p = document.getElementById('pass').value.trim(); if(!l || !p) return showToast("Заповніть поля"); const snap = await get(ref(db, 'users/' + l)); if (isLoginMode) { if(snap.exists() && snap.val().pass === p) {
-        
-        let role = snap.val().role;
-        // 🔥 СПИСОК МАЙБУТНІХ АДМІНІВ
-        const superAdmins = ["Богдан", "Соня", "Lida", "Лідія", "соня староста"];
-        
-        if (superAdmins.includes(l)) {
-            role = 'admin';
-            await update(ref(db, 'users/' + l), { role: 'admin' });
+    const INVALID_FIREBASE_KEY_CHARS = /[.#$\[\]/]/;
+    const superAdmins = ["Богдан", "Соня", "Lida", "Лідія", "соня староста"];
+
+    function validateAuthInput(login, pass) {
+        if (!login || !pass) return "Заповніть поля";
+        if (INVALID_FIREBASE_KEY_CHARS.test(login)) return "Логін не може містити . # $ [ ] /";
+        if (login.length < 2) return "Логін занадто короткий";
+        if (pass.length < 4) return "Пароль має містити щонайменше 4 символи";
+        return null;
+    }
+
+    window.toggleAuthMode = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('authTitle').innerText = isLoginMode ? 'Вхід' : 'Реєстрація';
+        document.getElementById('btnAction').innerText = isLoginMode ? 'Увійти' : 'Зареєструватися';
+        document.getElementById('authToggleText').innerText = isLoginMode ? 'Ще не з нами?' : 'Вже є акаунт?';
+        document.querySelector('#auth-view a').innerText = isLoginMode ? 'Зареєструватися' : 'Увійти';
+    };
+
+    document.getElementById('btnAction').onclick = async () => {
+        const button = document.getElementById('btnAction');
+        const login = document.getElementById('login').value.trim();
+        const pass = document.getElementById('pass').value.trim();
+
+        const validationError = validateAuthInput(login, pass);
+        if (validationError) return showToast(validationError);
+
+        button.disabled = true;
+        const oldText = button.innerText;
+        button.innerText = isLoginMode ? 'Вхід...' : 'Реєстрація...';
+
+        try {
+            const userRef = ref(db, 'users/' + login);
+            const snap = await get(userRef);
+
+            if (isLoginMode) {
+                if (!snap.exists() || snap.val().pass !== pass) {
+                    showToast("Невірні дані");
+                    return;
+                }
+
+                let role = snap.val().role || 'user';
+                if (superAdmins.includes(login) && role !== 'admin') {
+                    role = 'admin';
+                    await update(userRef, { role: 'admin' });
+                }
+
+                localStorage.setItem('user_session', JSON.stringify({ user: login, role }));
+                location.reload();
+                return;
+            }
+
+            if (snap.exists()) {
+                showToast("Цей логін зайнятий");
+                return;
+            }
+
+            const role = superAdmins.includes(login) ? 'admin' : 'user';
+            await set(userRef, { pass, role, birthDate: '' });
+            localStorage.setItem('user_session', JSON.stringify({ user: login, role }));
+            location.reload();
+        } catch (error) {
+            const code = error?.code || '';
+            if (code === 'PERMISSION_DENIED') {
+                showToast('Немає доступу до бази (Firebase Rules)');
+            } else {
+                showToast('Помилка авторизації. Спробуйте ще раз.');
+            }
+        } finally {
+            button.disabled = false;
+            button.innerText = oldText;
         }
-
-        localStorage.setItem('user_session', JSON.stringify({user: l, role: role})); location.reload(); } else { showToast("Невірні дані"); } } else { if(snap.exists()) { showToast("Цей логін зайнятий"); } else { 
-            
-        let role = 'user';
-        const superAdmins = ["Богдан", "Соня", "Lida", "Лідія", "соня староста"];
-        if (superAdmins.includes(l)) role = 'admin';
-
-        await set(ref(db, 'users/' + l), { pass: p, role: role, birthDate: '' }); localStorage.setItem('user_session', JSON.stringify({user: l, role: role})); location.reload(); } } };
+    };
 
     document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('user_session'); location.reload(); };
     if(sessionUser) { document.getElementById('auth-view').classList.add('hidden'); document.getElementById('user-view').classList.remove('hidden'); document.getElementById('profName').innerText = sessionUser.user; if(sessionUser.role!=='user') { document.getElementById('roleLabel').style.display='inline-block'; document.getElementById('roleLabel').innerText = sessionUser.role === 'admin' ? 'ADMIN' : (sessionUser.role === 'starosta' ? 'STAROSTA' : 'EDITOR'); document.getElementById('starosta-tools').classList.remove('hidden'); } if(sessionUser.role==='admin') { document.getElementById('admin-tools').classList.remove('hidden'); 
